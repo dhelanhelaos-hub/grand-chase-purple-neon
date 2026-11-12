@@ -1,0 +1,57 @@
+name: Build Grand Chase Purple Neon
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checkout official Poweramp skin SDK sample
+        uses: actions/checkout@v4
+        with:
+          repository: maxmpz/powerampapi
+          ref: master
+          path: powerampapi
+
+      - name: Apply Grand Chase Purple Neon theme
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path("powerampapi/poweramp_skin_sample/src/main/res")
+          strings = root / "values/strings.xml"
+          styles = root / "values/sample_skin_styles.xml"
+
+          s = strings.read_text(encoding="utf-8")
+          s = s.replace("Poweramp v3 Skin Sample", "Grand Chase Purple Neon")
+          s = s.replace("Sample Skin", "Grand Chase Purple Neon")
+          s = s.replace("This is a sample skin", "Dark fantasy violet neon theme inspired by Grand Chase")
+          strings.write_text(s, encoding="utf-8")
+
+          t = styles.read_text(encoding="utf-8")
+          t = t.replace("#000000", "#100D18")
+          t = t.replace("#FFFFFF", "#F5EFFF")
+          t = t.replace("#FF4081", "#A855F7")
+          styles.write_text(t, encoding="utf-8")
+          PY
+
+      - name: Build skin APK
+        working-directory: powerampapi
+        run: ./gradlew :poweramp_skin_sample:assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: grand-chase-purple-neon-apk
+          path: powerampapi/poweramp_skin_sample/build/outputs/apk/debug/*.apk
